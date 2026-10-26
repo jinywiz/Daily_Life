@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- ========================================== -->
+  <!-- 1. META & EXTERNAL LIBRARIES (헤더 및 라이브러리) -->
+  <!-- ========================================== -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DailyLife - 내 일상 기록 & 관리</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Inter Web Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind Custom Configuration -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- ========================================== -->
+  <!-- 2. CSS STYLES (커스텀 스타일시트 영역) -->
+  <!-- ========================================== -->
+  <style>
+    /* 스크롤바 커스텀 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* 애니메이션 및 트랜지션 클래스 */
+    .smooth-transition {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 포커스 아웃라인 미세 조정 */
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
+
+  <!-- ========================================== -->
+  <!-- 3. HTML MARKUP: GNB & HEADER (헤더 네비게이션) -->
+  <!-- ========================================== -->
+  <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Logo & Subtitle -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+          <i class="fa-solid fa-feather-pointed text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 leading-tight">MyDaily</h1>
+          <p class="text-xs text-slate-500">일상을 기록하고 주간 목표를 달성하세요</p>
+        </div>
+      </div>
+      
+      <!-- Right: Realtime Clock & Action Button -->
+      <div class="flex items-center gap-4">
+        <div class="hidden sm:flex flex-col text-right">
+          <span id="currentDateDisplay" class="text-xs font-medium text-slate-400"></span>
+          <span id="currentTimeDisplay" class="text-sm font-bold text-slate-700"></span>
+        </div>
+        <button type="button" onclick="openEntryModal()" 
+          class="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow transition duration-200 active:scale-95">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>오늘 일상 기록</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- 4. HTML MARKUP: MAIN CONTENT (메인 대시보드) -->
+  <!-- ========================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ---------------------------------------- -->
+    <!-- SECTION A: 주간 할 일(To-Do) 및 기록 통계 -->
+    <!-- ---------------------------------------- -->
+    <section class="grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
+      
+      <!-- A-1. 주간 할 일 (3 Columns for spacious Kanban) -->
+      <div class="lg:col-span-3 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
+        <div>
+          <!-- Header Bar: 이번 주 미션 / 다음 미션 / 구글 캘린더 연동 -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="refreshThisWeekTasks()" title="클릭 시 이번 주 할 일 새로고침" 
+                  class="group inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 hover:bg-brand-100 text-brand-600 transition active:scale-95 cursor-pointer">
+                  <i id="weekMissionIcon" class="fa-regular fa-calendar-check mr-1.5 transition-transform duration-500 group-hover:rotate-180"></i>
+                  <span>이번 주 미션</span>
+                  <i class="fa-solid fa-arrows-rotate ml-1.5 text-[10px] text-brand-400 opacity-60 group-hover:opacity-100"></i>
+                </button>
+                <h2 id="currentWeekRange" class="text-base font-bold text-slate-800">이번 주 주간 할 일</h2>
+              </div>
+              
+              <!-- 다음 미션 버튼 및 설명 라벨 -->
+              <div class="mt-2 flex items-center gap-2.5 flex-wrap">
+                <button type="button" onclick="openUpcomingMissionsModal()" 
+                  class="group inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 transition shadow-xs active:scale-95">
+                  <i class="fa-solid fa-flag-checkered mr-1.5 text-amber-600 group-hover:scale-110 transition-transform"></i>
+                  <span>다음 미션 (<span id="upcomingBadgeCount">0건</span>)</span>
+                </button>
+                <span class="text-sm font-semibold text-slate-700">연말까지 주요 일정 내용</span>
+              </div>
+            </div>
+            
+            <!-- Google Calendar Action Buttons -->
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" onclick="openGoogleSyncModal()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs px-3.5 py-2 rounded-xl transition font-semibold flex items-center gap-2 shadow-sm active:scale-95">
+                <i class="fa-brands fa-google text-sm"></i>
+                <span>구글 캘린더 일정 가져오기</span>
+              </button>
+              <button type="button" onclick="openGoogleCalendarWeb()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-2 rounded-xl transition font-medium flex items-center gap-1.5" title="구글 캘린더 새 창 열기">
+                <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+                <span class="hidden sm:inline">캘린더 바로가기</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Progress Bar & Stats -->
+          <div class="mt-4 bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex flex-col gap-2">
+            <div class="flex justify-between items-center text-xs font-semibold">
+              <span class="text-slate-600 flex items-center gap-1.5">
+                <i class="fa-solid fa-chart-line text-brand-600"></i> 주간 달성률
+              </span>
+              <span id="taskProgressPercent" class="text-brand-600 font-bold text-sm">0%</span>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+              <div id="taskProgressBar" class="bg-gradient-to-r from-brand-500 to-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <div class="flex justify-between text-[11px] text-slate-400">
+              <span id="taskStatsDetail">전체 0건 중 0건 완료</span>
+              <span id="delayAlertText" class="text-rose-500 font-medium hidden sm:inline"></span>
+            </div>
+          </div>
+
+          <!-- 4단 칸반형 섹션 -->
+          <div class="mt-5 grid grid-cols-1 md:grid-cols-4 gap-2.5" id="weeklyTaskColumns">
+            <!-- 1. 대기중 -->
+            <div class="bg-slate-50/80 rounded-xl p-2.5 border border-slate-200/70 flex flex-col min-w-0">
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/80">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+                  <span class="text-xs font-bold text-slate-700 truncate">대기중</span>
+                </div>
+                <span id="count-pending" class="text-[10px] font-semibold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full shrink-0">0</span>
+              </div>
+              <div id="list-pending" class="space-y-2 overflow-y-auto max-h-72 pr-0.5 min-h-[90px]"></div>
+            </div>
+
+            <!-- 2. 진행중 -->
+            <div class="bg-indigo-50/40 rounded-xl p-2.5 border border-indigo-100 flex flex-col min-w-0">
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-indigo-100">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse shrink-0"></span>
+                  <span class="text-xs font-bold text-slate-700 truncate">진행중</span>
+                </div>
+                <span id="count-in-progress" class="text-[10px] font-semibold bg-indigo-100 text-brand-700 px-1.5 py-0.5 rounded-full shrink-0">0</span>
+              </div>
+              <div id="list-in-progress" class="space-y-2 overflow-y-auto max-h-72 pr-0.5 min-h-[90px]"></div>
+            </div>
+
+            <!-- 3. 지연 -->
+            <div class="bg-rose-50/50 rounded-xl p-2.5 border border-rose-200/80 flex flex-col min-w-0">
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-rose-200">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                  <span class="text-xs font-bold text-rose-700 truncate">지연</span>
+                </div>
+                <span id="count-delayed" class="text-[10px] font-semibold bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded-full shrink-0">0</span>
+              </div>
+              <div id="list-delayed" class="space-y-2 overflow-y-auto max-h-72 pr-0.5 min-h-[90px]"></div>
+            </div>
+
+            <!-- 4. 완료 -->
+            <div class="bg-emerald-50/40 rounded-xl p-2.5 border border-emerald-100 flex flex-col min-w-0">
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-emerald-100">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                  <span class="text-xs font-bold text-slate-700 truncate">완료</span>
+                </div>
+                <span id="count-completed" class="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full shrink-0">0</span>
+              </div>
+              <div id="list-completed" class="space-y-2 overflow-y-auto max-h-72 pr-0.5 min-h-[90px]"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-2. 나의 기록 통계 (컴팩트 2/3 스케일 위젯) -->
+      <div class="lg:col-span-1 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 shadow-sm flex flex-col justify-between self-stretch">
+        <div>
+          <!-- Title -->
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-bold text-white tracking-tight leading-none">나의 기록 통계</h2>
+            <i class="fa-solid fa-fire text-amber-400 text-sm"></i>
+          </div>
+          
+          <!-- H3 급 한 줄 통합 배치 -->
+          <div class="mt-2.5">
+            <h3 class="flex items-baseline gap-1.5 text-base font-medium text-indigo-200 whitespace-nowrap leading-tight">
+              <span>일상을 기록한 지</span>
+              <span class="text-xl font-extrabold text-white tracking-tight" id="activeDaysCount">0</span>
+              <span>일째 이어지는 중</span>
+            </h3>
+          </div>
+
+          <!-- 한 줄 인라인 통계 카드 -->
+          <div class="grid grid-cols-2 gap-2 mt-2.5">
+            <div class="bg-white/10 rounded-lg px-2.5 py-1.5 backdrop-blur-xs border border-white/10 flex items-center justify-between min-w-0">
+              <span class="text-[11px] font-medium text-indigo-200 truncate leading-none">이번 달 기록</span>
+              <span id="monthEntryCount" class="text-xs font-bold text-white shrink-0 ml-1 leading-none">0건</span>
+            </div>
+            <div class="bg-white/10 rounded-lg px-2.5 py-1.5 backdrop-blur-xs border border-white/10 flex items-center justify-between min-w-0">
+              <span class="text-[11px] font-medium text-indigo-200 truncate leading-none">미디어 첨부</span>
+              <span id="mediaCount" class="text-xs font-bold text-amber-300 shrink-0 ml-1 leading-none">0개</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-2.5 pt-2 border-t border-white/10">
+          <p class="text-[10px] text-indigo-200/90 italic leading-tight line-clamp-2">"작은 일상의 조각들이 모여 아름다운 삶의 이야기가 됩니다."</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ---------------------------------------- -->
+    <!-- SECTION B: 일상 기록 및 일/주/월/년 필터 타임라인 -->
+    <!-- ---------------------------------------- -->
+    <section class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-6">
+      
+      <!-- Filter Bar: Search, Scope Switcher -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        
+        <!-- Period View Tabs -->
+        <div class="flex items-center bg-slate-100 p-1 rounded-xl self-start">
+          <button onclick="setFilterMode('all')" id="tab-all" class="filter-tab px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-brand-700 shadow-sm transition">
+            전체
+          </button>
+          <button onclick="setFilterMode('day')" id="tab-day" class="filter-tab px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:text-slate-900 transition">
+            일별 (오늘)
+          </button>
+          <button onclick="setFilterMode('week')" id="tab-week" class="filter-tab px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:text-slate-900 transition">
+            이번 주
+          </button>
+          <button onclick="setFilterMode('month')" id="tab-month" class="filter-tab px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:text-slate-900 transition">
+            이번 달
+          </button>
+          <button onclick="setFilterMode('year')" id="tab-year" class="filter-tab px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:text-slate-900 transition">
+            올해
+          </button>
+        </div>
+
+        <!-- Search & Date Picker Filter -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+            <input type="text" id="searchInput" oninput="renderEntries()" placeholder="기록 내용, 태그 검색..." 
+              class="text-xs sm:text-sm pl-8 pr-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 w-44 sm:w-56">
+          </div>
+          <input type="date" id="dateFilterInput" onchange="renderEntries()" 
+            class="text-xs sm:text-sm px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 text-slate-700">
+          <button onclick="resetFilters()" title="필터 초기화" class="p-2 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-100 transition text-xs">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Current Filter Description Status -->
+      <div class="flex items-center justify-between text-xs text-slate-500">
+        <div>
+          <span id="activeFilterLabel" class="font-semibold text-slate-700">전체 일상 기록</span>
+          <span id="entryCountBadge" class="ml-2 bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">0건</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] text-slate-400">정렬: 최신순</span>
+        </div>
+      </div>
+
+      <!-- Daily Entries Cards Container -->
+      <div id="entriesContainer" class="space-y-4 min-h-[240px]">
+        <!-- Dynamic Diary entries injected here -->
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 5. HTML MARKUP: MODALS (팝업 대화상자) -->
+  <!-- ========================================== -->
+
+  <!-- Modal 1: Image Lightbox (이미지 확대 뷰어) -->
+  <div id="imageLightboxModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4 transition-all duration-300" onclick="closeImageLightbox(event)">
+    <div class="relative max-w-4xl max-h-[90vh] w-full flex flex-col items-center justify-center" onclick="event.stopPropagation()">
+      <button onclick="closeImageLightbox()" class="absolute -top-12 right-0 sm:right-2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition text-sm flex items-center justify-center w-10 h-10 backdrop-blur-sm">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      
+      <div class="rounded-2xl overflow-hidden shadow-2xl bg-black/60 border border-white/10 flex items-center justify-center max-h-[82vh]">
+        <img id="lightboxImageEl" src="" alt="확대 이미지" class="max-w-full max-h-[80vh] w-auto h-auto object-contain select-none">
+      </div>
+
+      <div class="mt-3 flex items-center justify-between w-full px-2 text-white/80 text-xs">
+        <span id="lightboxCaption" class="truncate font-medium">이미지 상세보기</span>
+        <button onclick="downloadLightboxImage()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition text-xs font-semibold">
+          <i class="fa-solid fa-download"></i>
+          <span>원본 보기/다운로드</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Create/Edit Diary Entry (일상 기록 작성/수정) -->
+  <div id="entryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all my-8">
+      
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-pen-nib"></i>
+          </div>
+          <h3 class="font-bold text-slate-800 text-base" id="modalTitle">오늘의 일상 기록하기</h3>
+        </div>
+        <button onclick="closeEntryModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="entryForm" onsubmit="saveEntry(event)" class="p-6 space-y-4">
+        <!-- Date & Time -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">기록 일자 (자동 세팅)</label>
+            <div class="relative">
+              <i class="fa-regular fa-calendar absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+              <input type="date" id="entryDate" required class="w-full text-xs sm:text-sm pl-8 pr-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 bg-slate-50 font-medium text-slate-700">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">기록 시각 (자동 세팅)</label>
+            <div class="relative">
+              <i class="fa-regular fa-clock absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+              <input type="time" id="entryTime" required class="w-full text-xs sm:text-sm pl-8 pr-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 bg-slate-50 font-medium text-slate-700">
+            </div>
+          </div>
+        </div>
+
+        <!-- Mood & Category -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">오늘의 기분</label>
+            <select id="entryMood" class="w-full text-xs sm:text-sm px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 bg-white">
+              <option value="happy">😊 기분 좋음</option>
+              <option value="calm">🌿 평온함</option>
+              <option value="productive">🔥 보람찬 하루</option>
+              <option value="tired">🥱 피곤함</option>
+              <option value="sad">🌧️ 우울함</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">카테고리</label>
+            <select id="entryCategory" class="w-full text-xs sm:text-sm px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 bg-white">
+              <option value="일상">일상 (Daily)</option>
+              <option value="업무">업무/학습</option>
+              <option value="운동">운동/건강</option>
+              <option value="취미">취미/여가</option>
+              <option value="여행">여행/나들이</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Subject -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">제목</label>
+          <input type="text" id="entrySubject" placeholder="오늘 있었던 인상 깊은 일..." required 
+            class="w-full text-xs sm:text-sm px-3.5 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500"
+            onkeydown="if(event.key === 'Enter') { event.preventDefault(); document.getElementById('entryContent').focus(); }">
+        </div>
+
+        <!-- Content -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">상세 기록</label>
+          <textarea id="entryContent" rows="4" placeholder="오늘 하루는 어땠나요? 있었던 일, 생각, 감사한 순간을 기록해 보세요..." required 
+            class="w-full text-xs sm:text-sm p-3.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 resize-none"></textarea>
+        </div>
+
+        <!-- Media Upload Section -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">사진 및 동영상 첨부 (자동 압축)</label>
+          <div class="flex items-center gap-2">
+            <label class="cursor-pointer flex items-center justify-center gap-2 px-4 py-2 border border-dashed border-brand-400 bg-brand-50/50 hover:bg-brand-50 text-brand-700 text-xs font-medium rounded-xl transition w-full">
+              <i class="fa-solid fa-photo-film text-sm"></i>
+              <span>이미지 / 동영상 파일 선택</span>
+              <input type="file" id="mediaFileInput" accept="image/*,video/*" multiple onchange="handleMediaUpload(event)" class="hidden">
+            </label>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">저장 공간 확보를 위해 큰 이미지는 자동으로 압축 저장됩니다. (동영상은 최대 2MB)</p>
+          <div id="mediaPreviewContainer" class="flex flex-wrap gap-2 mt-2.5"></div>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeEntryModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition">
+            취소
+          </button>
+          <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow transition">
+            저장하기
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Google Sync Modal (구글 캘린더 연동) -->
+  <div id="googleSyncModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all my-8">
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-sm font-bold">
+            <i class="fa-brands fa-google"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">구글 캘린더 일정 가져오기</h3>
+            <p class="text-[11px] text-slate-400">구글 캘린더에 입력된 일정을 주간 할 일 목록으로 불러옵니다</p>
+          </div>
+        </div>
+        <button onclick="closeGoogleSyncModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5">
+        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/60 hover:bg-slate-50 transition space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="fa-solid fa-file-arrow-up text-brand-600"></i> 방법 1. 캘린더 내보내기 파일(.ics)로 가져오기
+            </span>
+            <span class="text-[10px] bg-brand-50 text-brand-600 font-semibold px-2 py-0.5 rounded-full">로그인 불필요</span>
+          </div>
+          <p class="text-[11px] text-slate-500 leading-relaxed">
+            구글 캘린더 설정에서 내보낸 <strong>.ics 파일</strong>을 선택하면 이번 주(월~일) 범위의 일정을 추출하여 주간 할 일로 등록합니다.
+          </p>
+          <label class="cursor-pointer flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-brand-300 bg-white hover:bg-brand-50/50 text-brand-700 text-xs font-semibold rounded-xl transition">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>구글 캘린더 파일 (.ics) 선택하여 가져오기</span>
+            <input type="file" id="icsFileInput" accept=".ics,text/calendar" onchange="handleIcsFileUpload(event)" class="hidden">
+          </label>
+        </div>
+
+        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/60 space-y-2.5 opacity-70 pointer-events-none" title="현재 기능이 비활성화되었습니다">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="fa-solid fa-rotate text-emerald-600"></i> 방법 2. 이번 주 구글 캘린더 일정 실시간 동기화
+            </span>
+            <span class="text-[10px] bg-emerald-50 text-emerald-600 font-semibold px-2 py-0.5 rounded-full">원클릭 동기화</span>
+          </div>
+          <p class="text-[11px] text-slate-500 leading-relaxed">
+            연동된 구글 계정의 이번 주 등록된 캘린더 일정을 최신 상태로 새로고침하여 가져옵니다. (현재 API 키 미설정으로 비활성화됨)
+          </p>
+          <button type="button" onclick="syncGoogleCalendarLive()" id="btnSyncGoogleLive" class="w-full bg-slate-800 text-white text-xs font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm cursor-not-allowed">
+            <i class="fa-solid fa-arrows-rotate" id="syncSpinnerIcon"></i>
+            <span>구글 캘린더 일정 실시간 불러오기</span>
+          </button>
+        </div>
+
+        <div class="bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-800 flex items-start gap-2">
+          <i class="fa-solid fa-circle-info text-amber-600 mt-0.5 shrink-0"></i>
+          <div>
+            <strong>안내:</strong> 이번 주(<span id="syncModalWeekInfo" class="font-semibold"></span>)에 해당하는 일정만 자동으로 필터링되어 대기중/진행중/지연 칸반 컬럼으로 적재됩니다.
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex justify-end">
+        <button type="button" onclick="closeGoogleSyncModal()" class="px-4 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Upcoming Missions Modal (다음 미션: 연말까지 등록된 일정/할 일) -->
+  <div id="upcomingMissionsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all my-8 flex flex-col max-h-[85vh]">
+      <div class="px-6 py-4 bg-gradient-to-r from-amber-50 via-indigo-50 to-white border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center text-base shadow-sm">
+            <i class="fa-solid fa-flag-checkered"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+              다음 미션 목록
+              <span class="text-xs font-normal text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full">연말까지 (12월 31일)</span>
+            </h3>
+            <p class="text-[11px] text-slate-500">구글 캘린더에서 불러온 올해 남은 주요 일정 및 미션입니다.</p>
+          </div>
+        </div>
+        <button onclick="closeUpcomingMissionsModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="px-6 py-3 bg-slate-50/70 border-b border-slate-200/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2 text-slate-600 font-medium">
+          <i class="fa-regular fa-calendar-days text-brand-600"></i>
+          <span>조회 기간: <strong id="upcomingDateScope" class="text-slate-800"></strong></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="syncYearEndGoogleEventsLive()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5 text-xs shadow-xs opacity-50 cursor-not-allowed" title="현재 비활성화됨">
+            <i class="fa-brands fa-google text-red-500"></i>
+            <span>캘린더에서 최신 일정 동기화</span>
+          </button>
+          <button type="button" onclick="importAllSelectedUpcoming()" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg transition font-semibold flex items-center gap-1.5 text-xs shadow-xs">
+            <i class="fa-solid fa-plus text-[10px]"></i>
+            <span>선택 항목 이번 주 보드로 추가</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-3 flex-1" id="upcomingMissionsListContainer"></div>
+
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        <span id="upcomingTotalSummary">총 0건의 연말 일정이 등록되어 있습니다.</span>
+        <button type="button" onclick="closeUpcomingMissionsModal()" class="px-4 py-1.5 font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Box -->
+  <div id="toastMessage" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl z-50 transform translate-y-16 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2">
+    <i class="fa-solid fa-circle-check text-green-400 text-sm"></i>
+    <span id="toastText">작업이 완료되었습니다.</span>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 6. JAVASCRIPT LOGIC (애플리케이션 스크립트 영역) -->
+  <!-- ========================================== -->
+  <script>
+    /* ========================================================
+       A. 상태 관리 (State Management) & 초기 데이터
+       ======================================================== */
+    let currentFilterMode = 'all'; 
+    let temporaryMediaList = [];    
+    let currentLightboxImageUrl = '';
+    let editingEntryId = null; // 수정 모드 추적용 변수
+
+    const today = new Date();
+
+    const formatDateStr = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const formatTimeStr = (d) => {
+      const h = String(d.getHours()).padStart(2, '0');
+      const m = String(d.getMinutes()).padStart(2, '0');
+      return `${h}:${m}`;
+    };
+
+    function getWeekRangeMondayToSunday(d) {
+      const current = new Date(d);
+      const day = current.getDay(); 
+      const diffToMonday = day === 0 ? -6 : 1 - day;
+      
+      const monday = new Date(current);
+      monday.setDate(current.getDate() + diffToMonday);
+      monday.setHours(0, 0, 0, 0);
+
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+
+      return { monday, sunday };
+    }
+
+    const { monday: thisWeekMonday, sunday: thisWeekSunday } = getWeekRangeMondayToSunday(today);
+    const yearEnd = new Date(today.getFullYear(), 11, 31, 23, 59, 59);
+    const yearEndStr = formatDateStr(yearEnd);
+
+    let weeklyTasks = JSON.parse(localStorage.getItem('myDaily_weeklyTasks')) || [];
+    let upcomingYearEndEvents = [];
+    let entries = JSON.parse(localStorage.getItem('myDaily_entries')) || [];
+
+    const moodMap = {
+      happy: { emoji: '😊', label: '기분 좋음', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      calm: { emoji: '🌿', label: '평온함', color: 'bg-sky-50 text-sky-700 border-sky-200' },
+      productive: { emoji: '🔥', label: '보람찬 하루', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+      tired: { emoji: '🥱', label: '피곤함', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+      sad: { emoji: '🌧️', label: '우울함', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+    };
+
+    function saveData() {
+      try {
+        localStorage.setItem('myDaily_weeklyTasks', JSON.stringify(weeklyTasks));
+        localStorage.setItem('myDaily_entries', JSON.stringify(entries));
+        return true;
+      } catch (e) {
+        alert('⚠️ 저장 공간이 부족합니다. 이전 기록의 사진이나 동영상을 일부 삭제해 주세요.');
+        return false;
+      }
+    }
+
+    /* ========================================================
+       A-2. 구글 API 설정 (Google Calendar API & GIS 연동)
+       ======================================================== */
+    // 👇👇👇 사용자 직접 수정 필요 👇👇👇
+    const GOOGLE_CLIENT_ID = ''; 
+    const GOOGLE_API_KEY = '';
+    // 👆👆👆 사용자 직접 수정 필요 👆👆👆
+
+    const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
+    const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+
+    let tokenClient;
+    let gapiInited = false;
+    let gisInited = false;
+    let gapiInitError = null;
+
+    async function initializeGapiClient() {
+      if (!GOOGLE_API_KEY || GOOGLE_API_KEY === 'YOUR_API_KEY') {
+        console.warn("안내: 실제 구글 API 키가 등록되지 않아 실시간 캘린더 연동 기능이 대기 상태입니다.");
+        return;
+      }
+      try {
+        await gapi.client.init({ apiKey: GOOGLE_API_KEY, discoveryDocs: [DISCOVERY_DOC] });
+        gapiInited = true;
+      } catch (e) { 
+        console.error("GAPI 초기화 실패:", e);
+        gapiInitError = e?.result?.error?.message || "알 수 없는 API 초기화 오류";
+      }
+    }
+
+    function gapiLoaded() { gapi.load('client', initializeGapiClient); }
+
+    function gisLoaded() {
+      if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_CLIENT_ID') return;
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: SCOPES,
+        callback: '',
+      });
+      gisInited = true;
+    }
+
+    function authenticateGoogle(callback) {
+      if (!GOOGLE_CLIENT_ID || !GOOGLE_API_KEY) {
+        showToast('⚠ 실시간 동기화가 비활성화되었습니다. 대신 [.ics 파일 가져오기]를 이용해 주세요.');
+        return;
+      }
+      if (gapiInitError) {
+        showToast('⚠ API 초기화 실패: ' + gapiInitError);
+        return;
+      }
+      if (!gapiInited || !gisInited) {
+        showToast('구글 API를 아직 불러오는 중이거나 로드에 실패했습니다.');
+        return;
+      }
+      if (GOOGLE_CLIENT_ID.includes('YOUR_CLIENT_ID')) {
+        showToast('⚠ 안내: 실제 구글 API 키와 클라이언트 ID를 등록해야 연동됩니다.');
+        return;
+      }
+      if (!GOOGLE_CLIENT_ID.includes('.apps.googleusercontent.com')) {
+        showToast('⚠ 오류: 클라이언트 ID가 잘못되었습니다. (.apps.googleusercontent.com 포함 확인)');
+        return;
+      }
+      
+      if (gapi.client.getToken() === null) {
+        try {
+          tokenClient.callback = async (resp) => {
+            if (resp.error) { showToast('구글 로그인 팝업이 닫혔거나 실패했습니다.'); return; }
+            await callback();
+          };
+          tokenClient.requestAccessToken({prompt: 'consent'});
+        } catch (err) {
+          showToast('팝업이 차단되었거나 인증 요청 중 오류가 발생했습니다.');
+        }
+      } else {
+        callback();
+      }
+    }
+
+    /* ========================================================
+       B. 라이프사이클 초기화 
+       ======================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      updateRealtimeClock();
+      setInterval(updateRealtimeClock, 1000);
+      updateWeekRangeHeader();
+      checkAndRefreshTaskStatuses();
+      renderWeeklyTasks();
+      renderEntries();
+      updateDashboardStats();
+      updateUpcomingBadge();
+    });
+
+    function updateRealtimeClock() {
+      const now = new Date();
+      const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
+      document.getElementById('currentDateDisplay').textContent = now.toLocaleDateString('ko-KR', options);
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('currentTimeDisplay').textContent = `${hours}:${minutes}:${seconds}`;
+    }
+
+    function updateWeekRangeHeader() {
+      const monStr = `${thisWeekMonday.getMonth() + 1}.${thisWeekMonday.getDate()}(월)`;
+      const sunStr = `${thisWeekSunday.getMonth() + 1}.${thisWeekSunday.getDate()}(일)`;
+      const rangeEl = document.getElementById('currentWeekRange');
+      if (rangeEl) rangeEl.textContent = `주간 할 일 (${monStr} ~ ${sunStr})`;
+    }
+
+    /* ========================================================
+       C. 주간 할 일 & 칸반 보드 
+       ======================================================== */
+    function refreshThisWeekTasks() {
+      const icon = document.getElementById('weekMissionIcon');
+      if (icon) icon.classList.add('fa-spin');
+      setTimeout(() => {
+        checkAndRefreshTaskStatuses();
+        renderWeeklyTasks();
+        if (icon) icon.classList.remove('fa-spin');
+        showToast('이번 주 할 일 목록을 최신 상태로 새로고침했습니다.');
+      }, 500);
+    }
+
+    function checkAndRefreshTaskStatuses() {
+      const todayStr = formatDateStr(new Date());
+      weeklyTasks.forEach(task => {
+        if (task.status !== 'completed') {
+          if (task.endDate && task.endDate < todayStr) {
+            task.status = 'delayed';
+          } else if (task.status === 'delayed' && task.endDate >= todayStr) {
+            task.status = 'in-progress';
+          }
+        }
+      });
+    }
+
+    function sortTasksChronological(tasks) {
+      return tasks.sort((a, b) => {
+        const timeA = (a.startTime && a.startTime !== '하루종일') ? a.startTime : '00:00';
+        const timeB = (b.startTime && b.startTime !== '하루종일') ? b.startTime : '00:00';
+        const dateA = new Date(`${a.startDate}T${timeA}`);
+        const dateB = new Date(`${b.startDate}T${timeB}`);
+        return dateA - dateB; 
+      });
+    }
+
+    function renderWeeklyTasks() {
+      checkAndRefreshTaskStatuses();
+
+      const containerPending = document.getElementById('list-pending');
+      const containerProgress = document.getElementById('list-in-progress');
+      const containerDelayed = document.getElementById('list-delayed');
+      const containerCompleted = document.getElementById('list-completed');
+
+      containerPending.innerHTML = ''; containerProgress.innerHTML = '';
+      containerDelayed.innerHTML = ''; containerCompleted.innerHTML = '';
+
+      const pendingTasks = sortTasksChronological(weeklyTasks.filter(t => t.status === 'pending'));
+      const inProgressTasks = sortTasksChronological(weeklyTasks.filter(t => t.status === 'in-progress'));
+      const delayedTasks = sortTasksChronological(weeklyTasks.filter(t => t.status === 'delayed'));
+      const completedTasks = sortTasksChronological(weeklyTasks.filter(t => t.status === 'completed'));
+
+      document.getElementById('count-pending').textContent = pendingTasks.length;
+      document.getElementById('count-in-progress').textContent = inProgressTasks.length;
+      document.getElementById('count-delayed').textContent = delayedTasks.length;
+      document.getElementById('count-completed').textContent = completedTasks.length;
+
+      const delayAlert = document.getElementById('delayAlertText');
+      if (delayedTasks.length > 0) delayAlert.textContent = `⚠️ 지연된 일정 ${delayedTasks.length}건이 있습니다!`;
+      else delayAlert.textContent = '';
+
+      const createTaskCard = (task) => {
+        const card = document.createElement('div');
+        const isDone = task.status === 'completed';
+        const isProg = task.status === 'in-progress';
+        const isDelayed = task.status === 'delayed';
+
+        let borderClass = 'border-slate-200';
+        if (isDone) borderClass = 'border-emerald-200/80 bg-white/90 opacity-80';
+        else if (isDelayed) borderClass = 'border-rose-300 bg-rose-50/30';
+        else if (isProg) borderClass = 'border-brand-200';
+
+        let timeDisplay = '';
+        let startDisp = '', endDisp = '';
+        if (task.startDate) {
+            const sd = new Date(task.startDate);
+            startDisp = `${sd.getMonth()+1}.${sd.getDate()}`;
+        }
+        if (task.endDate) {
+            const ed = new Date(task.endDate);
+            endDisp = `${ed.getMonth()+1}.${ed.getDate()}`;
+        }
+
+        let isAllDay = task.startTime === '하루종일' || (!task.startTime);
+
+        if (isAllDay) {
+            if (startDisp === endDisp || !endDisp) {
+                timeDisplay = `<span class="text-brand-600 font-semibold">${startDisp}</span> <span class="text-slate-500 ml-0.5">하루종일</span>`;
+            } else {
+                timeDisplay = `<span class="text-brand-600 font-semibold">${startDisp}~${endDisp}</span> <span class="text-slate-500 ml-0.5">하루종일</span>`;
+            }
+        } else {
+            if (startDisp === endDisp || !endDisp) {
+                timeDisplay = `<span class="text-brand-600 font-semibold">${startDisp}</span> <span class="text-slate-500 ml-0.5">${task.startTime}${task.endTime ? '~'+task.endTime : ''}</span>`;
+            } else {
+                timeDisplay = `<span class="text-brand-600 font-semibold">${startDisp}</span> <span class="text-slate-500 ml-0.5">${task.startTime}</span> ~ <span class="text-brand-600 font-semibold">${endDisp}</span> <span class="text-slate-500 ml-0.5">${task.endTime}</span>`;
+            }
+        }
+
+        card.className = `p-2 rounded-lg border bg-white shadow-xs transition hover:shadow-sm ${borderClass}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between pb-1 mb-1.5 border-b border-slate-100 text-[10px]">
+            <div class="flex items-center gap-1 truncate ${isDelayed ? 'text-rose-600' : ''}">
+              <i class="fa-regular fa-clock text-[9px] ${isDelayed ? 'text-rose-500' : 'text-slate-400'}"></i>
+              <span class="truncate tracking-tight">${timeDisplay}</span>
+            </div>
+            <button onclick="openGoogleCalendarEvent('${escapeHtml(task.title)}', '${task.startDate}', '${task.endDate}')" 
+              class="text-slate-400 hover:text-brand-600 transition p-0.5 shrink-0" title="구글 캘린더에 일정 등록/확인">
+              <i class="fa-brands fa-google text-[10px]"></i>
+            </button>
+          </div>
+          <div class="flex items-start justify-between gap-1 mb-2">
+            <span class="text-xs font-semibold leading-snug break-words ${isDone ? 'line-through text-slate-400 font-normal' : 'text-slate-800'}">
+              ${escapeHtml(task.title)}
+            </span>
+            <button onclick="deleteWeeklyTask('${task.id}')" class="text-slate-300 hover:text-red-500 transition p-0.5 shrink-0" title="삭제">
+              <i class="fa-regular fa-trash-can text-[10px]"></i>
+            </button>
+          </div>
+          <div class="flex items-center justify-between pt-1 border-t border-slate-100 gap-1.5 text-[10px]">
+            <div class="flex-1 min-w-0 flex items-center gap-1">
+              <i class="fa-solid fa-pen text-[9px] text-brand-400"></i>
+              <input type="text" placeholder="한 줄 메모..." value="${escapeHtml(task.memo || '')}" onchange="updateTaskMemo('${task.id}', this.value)" 
+                class="w-full bg-transparent border-none p-0 text-brand-600 font-bold placeholder:text-slate-300 placeholder:font-normal focus:ring-0 focus:outline-none text-[10px]" title="메모를 입력하고 엔터를 치거나 다른 곳을 클릭하면 저장됩니다.">
+            </div>
+            <select onchange="changeTaskStatus('${task.id}', this.value)" class="text-[10px] text-slate-600 font-medium rounded px-1.5 py-0.5 bg-slate-50 border border-slate-200 focus:outline-none w-auto cursor-pointer shrink-0">
+              <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>대기</option>
+              <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>진행</option>
+              <option value="delayed" ${task.status === 'delayed' ? 'selected' : ''}>지연</option>
+              <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>완료</option>
+            </select>
+          </div>
+        `;
+        return card;
+      };
+
+      const emptyNotice = (text) => `<div class="text-center py-6 text-[11px] text-slate-400 bg-white/50 rounded-lg border border-dashed border-slate-200">${text}</div>`;
+
+      if (pendingTasks.length === 0) containerPending.innerHTML = emptyNotice('대기중인 할 일이 없습니다');
+      else pendingTasks.forEach(task => containerPending.appendChild(createTaskCard(task)));
+
+      if (inProgressTasks.length === 0) containerProgress.innerHTML = emptyNotice('진행중인 할 일이 없습니다');
+      else inProgressTasks.forEach(task => containerProgress.appendChild(createTaskCard(task)));
+
+      if (delayedTasks.length === 0) containerDelayed.innerHTML = emptyNotice('지연된 할 일이 없습니다 🎉');
+      else delayedTasks.forEach(task => containerDelayed.appendChild(createTaskCard(task)));
+
+      if (completedTasks.length === 0) containerCompleted.innerHTML = emptyNotice('완료된 할 일이 없습니다');
+      else completedTasks.forEach(task => containerCompleted.appendChild(createTaskCard(task)));
+
+      updateWeeklyProgress();
+    }
+
+    function changeTaskStatus(id, newStatus) {
+      const task = weeklyTasks.find(t => t.id === id);
+      if (task) {
+        task.status = newStatus;
+        saveData(); 
+        renderWeeklyTasks();
+        showToast('상태가 변경되었습니다.');
+      }
+    }
+
+    function updateTaskMemo(id, memoText) {
+      const task = weeklyTasks.find(t => t.id === id);
+      if (task) {
+        task.memo = memoText;
+        saveData();
+        showToast('메모가 저장되었습니다.');
+      }
+    }
+
+    function deleteWeeklyTask(id) {
+      weeklyTasks = weeklyTasks.filter(t => t.id !== id);
+      saveData(); 
+      renderWeeklyTasks();
+      showToast('할 일이 삭제되었습니다.');
+    }
+
+    function updateWeeklyProgress() {
+      const total = weeklyTasks.length;
+      const completed = weeklyTasks.filter(t => t.id && t.status === 'completed').length;
+      const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+      document.getElementById('taskProgressPercent').textContent = `${percent}%`;
+      document.getElementById('taskProgressBar').style.width = `${percent}%`;
+      document.getElementById('taskStatsDetail').textContent = `전체 ${total}건 중 ${completed}건 완료`;
+    }
+
+    /* ========================================================
+       D. 다음 미션 (연말까지) 모달 관리
+       ======================================================== */
+    function updateUpcomingBadge() {
+      const badge = document.getElementById('upcomingBadgeCount');
+      if (badge) badge.textContent = `${upcomingYearEndEvents.length}건`;
+    }
+
+    function openUpcomingMissionsModal() {
+      const nowStr = formatDateStr(today);
+      const scopeEl = document.getElementById('upcomingDateScope');
+      if (scopeEl) scopeEl.textContent = `${nowStr} ~ ${yearEndStr} (연말)`;
+      renderUpcomingMissionsList();
+      document.getElementById('upcomingMissionsModal').classList.remove('hidden');
+    }
+
+    function closeUpcomingMissionsModal() {
+      document.getElementById('upcomingMissionsModal').classList.add('hidden');
+    }
+
+    function renderUpcomingMissionsList() {
+      const container = document.getElementById('upcomingMissionsListContainer');
+      const totalSummary = document.getElementById('upcomingTotalSummary');
+      if (!container) return;
+
+      container.innerHTML = '';
+      totalSummary.textContent = `총 ${upcomingYearEndEvents.length}건의 연말 일정이 등록되어 있습니다.`;
+
+      if (upcomingYearEndEvents.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 bg-slate-50/60 rounded-xl border border-dashed border-slate-200">
+            <i class="fa-regular fa-calendar-xmark text-3xl text-slate-400 mb-2"></i>
+            <p class="text-xs font-semibold text-slate-600">등록된 연말 일정이 없습니다.</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">'캘린더에서 최신 일정 동기화'를 눌러 불러오세요.</p>
+          </div>
+        `;
+        return;
+      }
+
+      upcomingYearEndEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+      const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
+
+      upcomingYearEndEvents.forEach((item, index) => {
+        const itemStartDate = new Date(item.startDate);
+        const diffDays = Math.ceil((itemStartDate - todayMidnight) / (1000 * 60 * 60 * 24));
+        const dDayText = diffDays === 0 ? 'D-Day' : (diffDays > 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`);
+        const isAlreadyInWeekly = weeklyTasks.some(t => t.title === item.title);
+
+        let timeDisplay = '';
+        let isAllDay = item.startTime === '하루종일' || !item.startTime;
+        
+        if (isAllDay) {
+            timeDisplay = item.startDate === item.endDate ? `${item.startDate} 하루종일` : `${item.startDate}~${item.endDate} 하루종일`;
+        } else {
+            if (item.startDate === item.endDate) {
+                timeDisplay = `${item.startDate} ${item.startTime}${item.endTime ? '~'+item.endTime : ''}`;
+            } else {
+                timeDisplay = `${item.startDate} ${item.startTime} ~ ${item.endDate} ${item.endTime}`;
+            }
+        }
+
+        const card = document.createElement('div');
+        card.className = "p-3.5 rounded-xl border border-slate-200/90 bg-white hover:border-brand-300 hover:shadow-xs transition flex flex-col sm:flex-row sm:items-center justify-between gap-3";
+        card.innerHTML = `
+          <div class="flex items-start gap-3 min-w-0">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${diffDays <= 7 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-700'} shrink-0 mt-0.5">
+              ${dDayText}
+            </span>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-[10px] font-semibold bg-indigo-50 text-brand-600 px-2 py-0.5 rounded-md">
+                  #${escapeHtml(item.category || '일정')}
+                </span>
+                <span class="text-xs font-bold text-slate-800 truncate">${escapeHtml(item.title)}</span>
+              </div>
+              <div class="flex items-center gap-3 mt-1 text-[11px] text-slate-500">
+                <span class="flex items-center gap-1"><i class="fa-regular fa-calendar text-[10px]"></i> ${timeDisplay}</span>
+                ${item.note ? `<span class="truncate text-slate-400">· ${escapeHtml(item.note)}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <button onclick="openGoogleCalendarEvent('${escapeHtml(item.title)}', '${item.startDate}', '${item.endDate}')" 
+              class="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-medium transition flex items-center gap-1" title="구글 캘린더에서 열기">
+              <i class="fa-brands fa-google text-[11px]"></i><span class="hidden sm:inline">확인</span>
+            </button>
+            <button onclick="importSingleUpcomingToWeekly(${index})" 
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-2xs ${isAlreadyInWeekly ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-brand-600 hover:bg-brand-700 text-white'}" 
+              ${isAlreadyInWeekly ? 'disabled' : ''}>
+              <i class="fa-solid fa-arrow-down-to-bracket text-[10px]"></i>
+              <span>${isAlreadyInWeekly ? '등록됨' : '보드로 추가'}</span>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function importSingleUpcomingToWeekly(index) {
+      const item = upcomingYearEndEvents[index];
+      if (!item || weeklyTasks.some(t => t.title === item.title)) return;
+      const isOverdue = item.endDate < formatDateStr(new Date());
+
+      weeklyTasks.unshift({
+        id: 'task-from-up-' + Date.now(),
+        title: item.title, startDate: item.startDate, endDate: item.endDate,
+        startTime: item.startTime, endTime: item.endTime,
+        status: isOverdue ? 'delayed' : 'pending'
+      });
+      saveData();
+      renderWeeklyTasks(); renderUpcomingMissionsList();
+      showToast(`'${item.title}' 일정을 이번 주 할 일로 추가했습니다.`);
+    }
+
+    function importAllSelectedUpcoming() {
+      let added = 0;
+      const todayStr = formatDateStr(new Date());
+      upcomingYearEndEvents.forEach(item => {
+        if (!weeklyTasks.some(t => t.title === item.title)) {
+          weeklyTasks.unshift({
+            id: 'task-up-batch-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+            title: item.title, startDate: item.startDate, endDate: item.endDate,
+            startTime: item.startTime, endTime: item.endTime,
+            status: item.endDate < todayStr ? 'delayed' : 'pending'
+          });
+          added++;
+        }
+      });
+      if (added > 0) {
+        saveData(); renderWeeklyTasks(); renderUpcomingMissionsList();
+        showToast(`${added}개의 연말 일정을 일괄 추가했습니다.`);
+      } else { showToast('추가할 새로운 일정이 없습니다.'); }
+    }
+
+    function syncYearEndGoogleEventsLive() {
+      authenticateGoogle(async () => {
+        showToast('구글 캘린더로부터 연말(12.31)까지의 일정을 불러오는 중...');
+        try {
+          const response = await gapi.client.calendar.events.list({
+            'calendarId': 'primary', 'timeMin': new Date().toISOString(), 'timeMax': yearEnd.toISOString(),
+            'showDeleted': false, 'singleEvents': true, 'maxResults': 100, 'orderBy': 'startTime'
+          });
+          const events = response.result.items;
+          upcomingYearEndEvents = []; 
+          
+          events.forEach(evt => {
+            const title = evt.summary || '제목 없음';
+            let startDateStr = '', endDateStr = '', startTimeStr = '', endTimeStr = '';
+
+            if (evt.start.dateTime) {
+                const startD = new Date(evt.start.dateTime);
+                startDateStr = formatDateStr(startD);
+                startTimeStr = formatTimeStr(startD);
+            } else if (evt.start.date) {
+                startDateStr = evt.start.date;
+                startTimeStr = '하루종일';
+            }
+
+            if (evt.end.dateTime) {
+                const endD = new Date(evt.end.dateTime);
+                endDateStr = formatDateStr(endD);
+                endTimeStr = formatTimeStr(endD);
+            } else if (evt.end.date) {
+                const endD = new Date(evt.end.date);
+                endD.setDate(endD.getDate() - 1);
+                endDateStr = formatDateStr(endD);
+                endTimeStr = '하루종일';
+            }
+
+            upcomingYearEndEvents.push({
+              id: 'up-gcal-' + evt.id, title: title, 
+              startDate: startDateStr, endDate: endDateStr,
+              startTime: startTimeStr, endTime: endTimeStr,
+              category: '일정', note: evt.description || ''
+            });
+          });
+          renderUpcomingMissionsList(); updateUpcomingBadge();
+          showToast('실제 연말 구글 캘린더 일정이 최신화되었습니다.');
+        } catch (err) { showToast('캘린더 일정을 불러오는 중 오류가 발생했습니다.'); }
+      });
+    }
+
+    /* ========================================================
+       E. 구글 캘린더 동기화 모달 및 이벤트 연동
+       ======================================================== */
+    function openGoogleSyncModal() {
+      const monStr = `${thisWeekMonday.getMonth() + 1}.${thisWeekMonday.getDate()}(월)`;
+      const sunStr = `${thisWeekSunday.getMonth() + 1}.${thisWeekSunday.getDate()}(일)`;
+      const infoEl = document.getElementById('syncModalWeekInfo');
+      if (infoEl) infoEl.textContent = `${monStr} ~ ${sunStr}`;
+      document.getElementById('googleSyncModal').classList.remove('hidden');
+    }
+
+    function closeGoogleSyncModal() { document.getElementById('googleSyncModal').classList.add('hidden'); }
+    function openGoogleCalendarWeb() { window.open('https://calendar.google.com/calendar', '_blank'); }
+
+    function openGoogleCalendarEvent(title, startDate, endDate) {
+      if (!startDate) startDate = formatDateStr(new Date());
+      if (!endDate) endDate = startDate;
+      const formatCalDate = (dStr) => dStr.replace(/-/g, '');
+      const startCal = formatCalDate(startDate);
+      const endObj = new Date(endDate); endObj.setDate(endObj.getDate() + 1);
+      const endCal = formatCalDate(formatDateStr(endObj));
+      const eventUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startCal}/${endCal}`;
+      window.open(eventUrl, '_blank');
+    }
+
+    function syncGoogleCalendarLive() {
+      authenticateGoogle(async () => {
+        const btn = document.getElementById('btnSyncGoogleLive');
+        const icon = document.getElementById('syncSpinnerIcon');
+        if(btn) btn.disabled = true; if(icon) icon.classList.add('fa-spin');
+
+        try {
+          const response = await gapi.client.calendar.events.list({
+            'calendarId': 'primary', 'timeMin': thisWeekMonday.toISOString(), 'timeMax': thisWeekSunday.toISOString(),
+            'showDeleted': false, 'singleEvents': true, 'maxResults': 50, 'orderBy': 'startTime'
+          });
+          const events = response.result.items;
+          let addedCount = 0; const todayStr = formatDateStr(new Date());
+
+          events.forEach(evt => {
+            const title = `[구글] ${evt.summary || '제목 없음'}`;
+            let startDateStr = '', endDateStr = '', startTimeStr = '', endTimeStr = '';
+
+            if (evt.start.dateTime) {
+                const startD = new Date(evt.start.dateTime);
+                startDateStr = formatDateStr(startD);
+                startTimeStr = formatTimeStr(startD);
+            } else if (evt.start.date) {
+                startDateStr = evt.start.date;
+                startTimeStr = '하루종일';
+            }
+
+            if (evt.end.dateTime) {
+                const endD = new Date(evt.end.dateTime);
+                endDateStr = formatDateStr(endD);
+                endTimeStr = formatTimeStr(endD);
+            } else if (evt.end.date) {
+                const endD = new Date(evt.end.date);
+                endD.setDate(endD.getDate() - 1);
+                endDateStr = formatDateStr(endD);
+                endTimeStr = '하루종일';
+            }
+
+            if (!weeklyTasks.some(t => t.title === title && t.startDate === startDateStr)) {
+              weeklyTasks.unshift({
+                id: 'task-gcal-' + evt.id, title: title, 
+                startDate: startDateStr, endDate: endDateStr,
+                startTime: startTimeStr, endTime: endTimeStr,
+                status: endDateStr < todayStr ? 'delayed' : 'pending'
+              });
+              addedCount++;
+            }
+          });
+          saveData(); renderWeeklyTasks(); closeGoogleSyncModal();
+          showToast(addedCount > 0 ? `구글 캘린더에서 ${addedCount}개의 이번 주 일정을 동기화했습니다.` : '새로 추가할 이번 주 일정이 없습니다.');
+        } catch (err) { 
+          const errMsg = err?.result?.error?.message || "알 수 없는 오류";
+          showToast(`API 통신 실패: ${errMsg}`);
+        } 
+        finally { if(btn) btn.disabled = false; if(icon) icon.classList.remove('fa-spin'); }
+      });
+    }
+
+    function handleIcsFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsedTasks = parseIcsToWeeklyTasks(e.target.result);
+          if (parsedTasks.length === 0) { showToast('이번 주(월~일) 범위에 해당하는 일정을 찾지 못했습니다.'); } 
+          else {
+            let count = 0;
+            parsedTasks.forEach(task => {
+              if (!weeklyTasks.some(t => t.title === task.title && t.startDate === task.startDate)) {
+                weeklyTasks.unshift(task); count++;
+              }
+            });
+            saveData(); renderWeeklyTasks(); closeGoogleSyncModal();
+            showToast(`구글 캘린더 파일에서 ${count}개의 일정을 가져왔습니다.`);
+          }
+        } catch (err) { showToast('캘린더 파일 형식을 읽는 중 오류가 발생했습니다.'); }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    function parseIcsToWeeklyTasks(text) {
+      const tasks = []; const vEvents = text.split('BEGIN:VEVENT'); const todayStr = formatDateStr(new Date());
+      for (let i = 1; i < vEvents.length; i++) {
+        const chunk = vEvents[i].split('END:VEVENT')[0];
+        
+        const summaryMatch = chunk.match(/SUMMARY.*?:(.*)/);
+        const dtstartMatch = chunk.match(/DTSTART([^:]*):(\d{8})(T(\d{6})Z?)?/);
+        const dtendMatch = chunk.match(/DTEND([^:]*):(\d{8})(T(\d{6})Z?)?/);
+
+        if (summaryMatch && dtstartMatch) {
+          const summary = summaryMatch[1].trim();
+          const startRaw = dtstartMatch[2]; 
+          const endRaw = dtendMatch ? dtendMatch[2] : startRaw;
+          
+          let startIso = `${startRaw.substring(0,4)}-${startRaw.substring(4,6)}-${startRaw.substring(6,8)}`;
+          let endIso = `${endRaw.substring(0,4)}-${endRaw.substring(4,6)}-${endRaw.substring(6,8)}`;
+          
+          let startTime = '하루종일';
+          let endTime = '하루종일';
+
+          if (dtstartMatch[3]) {
+            const timeStr = dtstartMatch[4];
+            const isUTC = dtstartMatch[3].endsWith('Z');
+            if (isUTC) {
+              const d = new Date(`${startIso}T${timeStr.substring(0,2)}:${timeStr.substring(2,4)}:00Z`);
+              startIso = formatDateStr(d);
+              startTime = formatTimeStr(d);
+            } else {
+              startTime = `${timeStr.substring(0,2)}:${timeStr.substring(2,4)}`;
+            }
+          }
+
+          if (dtendMatch && dtendMatch[3]) {
+            const timeStr = dtendMatch[4];
+            const isUTC = dtendMatch[3].endsWith('Z');
+            if (isUTC) {
+              const d = new Date(`${endIso}T${timeStr.substring(0,2)}:${timeStr.substring(2,4)}:00Z`);
+              endIso = formatDateStr(d);
+              endTime = formatTimeStr(d);
+            } else {
+              endTime = `${timeStr.substring(0,2)}:${timeStr.substring(2,4)}`;
+            }
+          }
+
+          const startDateObj = new Date(startIso);
+          if (startDateObj >= thisWeekMonday && startDateObj <= thisWeekSunday) {
+            tasks.push({
+              id: 'task-ics-' + Date.now() + '-' + i, title: `[구글 캘린더] ${summary}`,
+              startDate: startIso, endDate: endIso,
+              startTime: startTime, endTime: endTime,
+              status: endIso < todayStr ? 'delayed' : 'pending'
+            });
+          }
+        }
+      }
+      return tasks;
+    }
+
+    /* ========================================================
+       F. 일상 기록 모달 & CRUD 관리 (이미지 압축 로직 포함)
+       ======================================================== */
+    function openEntryModal() {
+      editingEntryId = null; // 수정 모드 초기화
+      const now = new Date();
+      document.getElementById('entryDate').value = formatDateStr(now);
+      document.getElementById('entryTime').value = formatTimeStr(now);
+      document.getElementById('entrySubject').value = '';
+      document.getElementById('entryContent').value = '';
+      document.getElementById('entryMood').value = 'happy';
+      document.getElementById('entryCategory').value = '일상';
+      document.getElementById('mediaFileInput').value = '';
+      temporaryMediaList = [];
+      renderMediaPreviews();
+
+      document.getElementById('modalTitle').textContent = '오늘의 일상 기록하기';
+      document.getElementById('entryModal').classList.remove('hidden');
+
+      setTimeout(() => {
+        const subjectInput = document.getElementById('entrySubject');
+        if (subjectInput) subjectInput.focus();
+      }, 50);
+    }
+
+    function editEntry(id) {
+      const entry = entries.find(e => e.id === id);
+      if (!entry) return;
+
+      editingEntryId = id;
+      document.getElementById('entryDate').value = entry.date;
+      document.getElementById('entryTime').value = entry.time || '00:00';
+      document.getElementById('entrySubject').value = entry.subject;
+      document.getElementById('entryContent').value = entry.content;
+      document.getElementById('entryMood').value = entry.mood;
+      document.getElementById('entryCategory').value = entry.category;
+
+      temporaryMediaList = entry.media ? [...entry.media] : [];
+      renderMediaPreviews();
+
+      document.getElementById('modalTitle').textContent = '일상 기록 수정하기';
+      document.getElementById('entryModal').classList.remove('hidden');
+
+      setTimeout(() => {
+        const subjectInput = document.getElementById('entrySubject');
+        if (subjectInput) subjectInput.focus();
+      }, 50);
+    }
+
+    function closeEntryModal() { 
+      document.getElementById('entryModal').classList.add('hidden'); 
+      editingEntryId = null; 
+    }
+
+    function handleMediaUpload(event) {
+      const files = Array.from(event.target.files);
+      if (!files.length) return;
+
+      files.forEach(file => {
+        const isVideo = file.type.startsWith('video');
+
+        if (isVideo) {
+          if (file.size > 2 * 1024 * 1024) {
+            alert('동영상은 최대 2MB까지만 첨부할 수 있습니다. (브라우저 저장소 제한)');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            temporaryMediaList.push({ type: 'video', url: e.target.result, name: file.name });
+            renderMediaPreviews();
+          };
+          reader.readAsDataURL(file);
+        } else {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+              const canvas = document.createElement('canvas');
+              const MAX_WIDTH = 800; 
+              const MAX_HEIGHT = 800; 
+              let width = img.width;
+              let height = img.height;
+
+              if (width > height) {
+                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+              } else {
+                if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+              
+              temporaryMediaList.push({ type: 'image', url: dataUrl, name: file.name });
+              renderMediaPreviews();
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      event.target.value = '';
+    }
+
+    function removeTempMedia(index) {
+      temporaryMediaList.splice(index, 1);
+      renderMediaPreviews();
+    }
+
+    function renderMediaPreviews() {
+      const container = document.getElementById('mediaPreviewContainer');
+      container.innerHTML = '';
+
+      temporaryMediaList.forEach((media, idx) => {
+        const thumbWrapper = document.createElement('div');
+        thumbWrapper.className = 'relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200 bg-black group';
+
+        if (media.type === 'image') {
+          thumbWrapper.innerHTML = `
+            <img src="${media.url}" class="w-full h-full object-cover">
+            <button type="button" onclick="removeTempMedia(${idx})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow"><i class="fa-solid fa-xmark"></i></button>
+          `;
+        } else {
+          thumbWrapper.innerHTML = `
+            <video src="${media.url}" class="w-full h-full object-cover"></video>
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none text-white/80"><i class="fa-solid fa-play text-xs"></i></div>
+            <button type="button" onclick="removeTempMedia(${idx})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow"><i class="fa-solid fa-xmark"></i></button>
+          `;
+        }
+        container.appendChild(thumbWrapper);
+      });
+    }
+
+    function saveEntry(e) {
+      e.preventDefault();
+      const date = document.getElementById('entryDate').value;
+      const time = document.getElementById('entryTime').value;
+      const subject = document.getElementById('entrySubject').value.trim();
+      const content = document.getElementById('entryContent').value.trim();
+      const mood = document.getElementById('entryMood').value;
+      const category = document.getElementById('entryCategory').value;
+
+      if (!date || !time || !subject || !content) return;
+
+      if (editingEntryId) {
+        // 기존 기록 수정
+        const index = entries.findIndex(item => item.id === editingEntryId);
+        if (index !== -1) {
+          entries[index] = {
+            ...entries[index],
+            date, time, subject, content, mood, category,
+            media: [...temporaryMediaList]
+          };
+        }
+      } else {
+        // 새 기록 추가
+        const newEntry = {
+          id: 'entry-' + Date.now(),
+          date, time, subject, content, mood, category,
+          media: [...temporaryMediaList]
+        };
+        entries.unshift(newEntry);
+      }
+      
+      if (saveData()) {
+        const msg = editingEntryId ? '기록이 성공적으로 수정되었습니다.' : '일상이 성공적으로 기록되었습니다!';
+        closeEntryModal();
+        renderEntries();
+        updateDashboardStats();
+        showToast(msg);
+      } else {
+        if (!editingEntryId) entries.shift(); // 용량 부족 시 추가했던 것만 취소
+      }
+    }
+
+    function deleteEntry(id) {
+      entries = entries.filter(item => item.id !== id);
+      saveData(); 
+      renderEntries();
+      updateDashboardStats();
+      showToast('기록이 삭제되었습니다.');
+    }
+
+    /* ========================================================
+       G. 필터링 및 렌더링 (Filtering & Timeline Rendering)
+       ======================================================== */
+    function setFilterMode(mode) {
+      currentFilterMode = mode;
+      
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.className = 'filter-tab px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 hover:text-slate-900 transition';
+      });
+      const activeBtn = document.getElementById(`tab-${mode}`);
+      if (activeBtn) activeBtn.className = 'filter-tab px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-brand-700 shadow-sm transition';
+
+      const labelMap = {
+        all: '전체 일상 기록', day: '오늘의 일상 (Day)', week: '이번 주 일상 (Week)',
+        month: '이번 달 일상 (Month)', year: '올해의 일상 (Year)'
+      };
+      document.getElementById('activeFilterLabel').textContent = labelMap[mode] || '일상 기록';
+      renderEntries();
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('dateFilterInput').value = '';
+      setFilterMode('all');
+    }
+
+    function isSameDay(d1, d2) { return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate(); }
+    function isSameWeekMondayToSunday(targetDate, refDate) {
+      const { monday, sunday } = getWeekRangeMondayToSunday(refDate);
+      return targetDate >= monday && targetDate <= sunday;
+    }
+    function isSameMonth(d1, d2) { return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth(); }
+    function isSameYear(d1, d2) { return d1.getFullYear() === d2.getFullYear(); }
+
+    function renderEntries() {
+      const container = document.getElementById('entriesContainer');
+      const searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+      const specificDateFilter = document.getElementById('dateFilterInput').value;
+      const now = new Date();
+
+      const filtered = entries.filter(entry => {
+        const entryDate = new Date(entry.date + 'T' + (entry.time || '00:00'));
+        if (currentFilterMode === 'day') { if (!isSameDay(entryDate, now)) return false; } 
+        else if (currentFilterMode === 'week') { if (!isSameWeekMondayToSunday(entryDate, now)) return false; } 
+        else if (currentFilterMode === 'month') { if (!isSameMonth(entryDate, now)) return false; } 
+        else if (currentFilterMode === 'year') { if (!isSameYear(entryDate, now)) return false; }
+
+        if (specificDateFilter && entry.date !== specificDateFilter) return false;
+
+        if (searchQuery) {
+          const inSubject = entry.subject.toLowerCase().includes(searchQuery);
+          const inContent = entry.content.toLowerCase().includes(searchQuery);
+          const inCategory = entry.category.toLowerCase().includes(searchQuery);
+          if (!inSubject && !inContent && !inCategory) return false;
+        }
+        return true;
+      });
+
+      filtered.sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`));
+      document.getElementById('entryCountBadge').textContent = `${filtered.length}건`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-16 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+            <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+              <i class="fa-regular fa-folder-open text-xl"></i>
+            </div>
+            <h4 class="text-sm font-semibold text-slate-700">해당 기간의 기록이 없습니다</h4>
+            <p class="text-xs text-slate-400 mt-1">상단의 '오늘 일상 기록' 버튼을 눌러 하루를 저장해 보세요.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '';
+      filtered.forEach(entry => {
+        const moodInfo = moodMap[entry.mood] || moodMap.happy;
+        const card = document.createElement('article');
+        card.className = "bg-white border border-slate-200/90 rounded-2xl p-5 hover:shadow-md transition duration-200 space-y-3";
+
+        const imageMedia = (entry.media || []).filter(m => m.type === 'image');
+        const videoMedia = (entry.media || []).filter(m => m.type === 'video');
+        let bodyLayoutHtml = '';
+
+        if (imageMedia.length > 0) {
+          const mainImage = imageMedia[0];
+          const extraCount = imageMedia.length - 1;
+          bodyLayoutHtml = `
+            <div class="flex flex-col sm:flex-row gap-4 items-start pt-1">
+              <div class="relative shrink-0 w-full sm:w-48 sm:h-36 h-48 rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80 group cursor-pointer shadow-xs"
+                   onclick="openImageLightbox('${mainImage.url}', '${escapeHtml(entry.subject)}')">
+                <img src="${mainImage.url}" alt="대표 이미지" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                <div class="absolute inset-0 bg-slate-900/35 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white gap-1 backdrop-blur-xs">
+                  <i class="fa-solid fa-magnifying-glass-plus text-xl drop-shadow"></i>
+                  <span class="text-[11px] font-semibold tracking-wide">클릭하여 확대</span>
+                </div>
+                ${extraCount > 0 ? `
+                  <div class="absolute bottom-2 right-2 bg-slate-900/75 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                    <i class="fa-solid fa-images text-[9px]"></i><span>+${extraCount}</span>
+                  </div>
+                ` : ''}
+              </div>
+              <div class="flex-1 min-w-0 flex flex-col justify-between self-stretch">
+                <p class="text-xs sm:text-sm text-slate-600 whitespace-pre-line leading-relaxed">${escapeHtml(entry.content)}</p>
+                ${imageMedia.length > 1 ? `
+                  <div class="flex items-center gap-2 pt-2.5 mt-2 border-t border-slate-100/80 overflow-x-auto">
+                    ${imageMedia.map((img, i) => `
+                      <button type="button" onclick="openImageLightbox('${img.url}', '${escapeHtml(entry.subject)} (${i+1}/${imageMedia.length})')" 
+                        class="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 shrink-0 hover:ring-2 hover:ring-brand-500 transition group/thumb">
+                        <img src="${img.url}" alt="서브 이미지" class="w-full h-full object-cover group-hover/thumb:scale-110 transition">
+                      </button>
+                    `).join('')}
+                    <span class="text-[11px] text-slate-400 pl-1 shrink-0">추가 사진 (${imageMedia.length}장)</span>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        } else {
+          bodyLayoutHtml = `<p class="text-xs sm:text-sm text-slate-600 whitespace-pre-line leading-relaxed">${escapeHtml(entry.content)}</p>`;
+        }
+
+        let videoHtml = '';
+        if (videoMedia.length > 0) {
+          const videoItems = videoMedia.map(v => `<div class="relative rounded-xl overflow-hidden bg-black max-h-72 border border-slate-200"><video src="${v.url}" controls class="w-full h-full object-cover"></video></div>`).join('');
+          videoHtml = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">${videoItems}</div>`;
+        }
+
+        card.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${moodInfo.color}">
+                <span>${moodInfo.emoji}</span><span>${moodInfo.label}</span>
+              </span>
+              <span class="text-xs font-medium bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">#${entry.category}</span>
+              <h3 class="text-sm sm:text-base font-bold text-slate-800 ml-1">${escapeHtml(entry.subject)}</h3>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-400 shrink-0">
+              <span class="flex items-center gap-1 font-medium text-slate-500 mr-2"><i class="fa-regular fa-clock"></i> ${entry.date} ${entry.time}</span>
+              <button onclick="editEntry('${entry.id}')" class="text-slate-400 hover:text-brand-600 transition p-1" title="기록 수정"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button onclick="deleteEntry('${entry.id}')" class="text-slate-400 hover:text-red-500 transition p-1" title="기록 삭제"><i class="fa-regular fa-trash-can"></i></button>
+            </div>
+          </div>
+          ${bodyLayoutHtml}
+          ${videoHtml}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    /* ========================================================
+       H. 이미지 라이트박스 
+       ======================================================== */
+    function openImageLightbox(imageUrl, caption) {
+      currentLightboxImageUrl = imageUrl;
+      document.getElementById('lightboxImageEl').src = imageUrl;
+      document.getElementById('lightboxCaption').textContent = caption ? `사진: ${caption}` : '이미지 확대 보기';
+      document.getElementById('imageLightboxModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeImageLightbox() {
+      document.getElementById('imageLightboxModal').classList.add('hidden');
+      document.body.style.overflow = '';
+      currentLightboxImageUrl = '';
+    }
+
+    function downloadLightboxImage() {
+      if (currentLightboxImageUrl) window.open(currentLightboxImageUrl, '_blank');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const lightbox = document.getElementById('imageLightboxModal');
+        if (lightbox && !lightbox.classList.contains('hidden')) closeImageLightbox();
+      }
+    });
+
+    /* ========================================================
+       I. 공통 유틸리티 
+       ======================================================== */
+    function updateDashboardStats() {
+      const now = new Date();
+      const thisMonthEntries = entries.filter(e => isSameMonth(new Date(e.date), now));
+      document.getElementById('monthEntryCount').textContent = `${thisMonthEntries.length}건`;
+
+      let totalMedia = 0;
+      entries.forEach(e => { if (e.media) totalMedia += e.media.length; });
+      document.getElementById('mediaCount').textContent = `${totalMedia}개`;
+
+      const activeDaysEl = document.getElementById('activeDaysCount');
+      if (entries.length === 0) {
+        activeDaysEl.textContent = '0';
+      } else {
+        const oldestEntry = entries.reduce((min, p) => p.date < min.date ? p : min, entries[0]);
+        const firstDate = new Date(oldestEntry.date);
+        firstDate.setHours(0, 0, 0, 0);
+        
+        const todayMidnight = new Date();
+        todayMidnight.setHours(0, 0, 0, 0);
+        
+        const diffTime = todayMidnight.getTime() - firstDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+        
+        activeDaysEl.textContent = diffDays;
+      }
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById('toastMessage');
+      document.getElementById('toastText').textContent = text;
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 2500);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+
+  <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+  <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
+</body>
+</html>
